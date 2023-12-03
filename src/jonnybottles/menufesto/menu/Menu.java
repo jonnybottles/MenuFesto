@@ -78,7 +78,7 @@ public class Menu {
 
         }
 
-        System.out.print(formattedMenuName); // Prints the centered menu name with dashes
+        System.out.println(formattedMenuName + "\n"); // Prints the centered menu name with dashes
     }
 
 
@@ -93,15 +93,14 @@ public class Menu {
                 if (isValidSelection(userSelection)) {
                     return userSelection;
                 } else {
+                    Utilities.clearScreen();
                     System.out.println("Invalid selection, please try again.");
                 }
             } catch (NumberFormatException e) {
+                Utilities.clearScreen();
                 System.out.println("Please enter a valid integer.");
             } catch (NoSuchElementException e) {
                 exitProgram();
-                // Instead of returning -1, consider how you want to handle this case.
-                // For now, we can just continue to prompt the user again.
-                // return -1;
             }
         }
         // Do not include a scanner.close() statement here or anywhere with System.in
