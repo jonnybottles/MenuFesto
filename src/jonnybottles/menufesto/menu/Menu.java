@@ -6,13 +6,12 @@ import java.util.*;
 
 public class Menu {
 
-    private String programName; // The program name
-    private Menu parentMenu;
-    private String menuName; // The menu name
-    private List<String> menuItems; // A list of menu selection items
-    private int lowestMenuItemNum;
-    private int highestMenuItemNum;
-    private boolean isMainMenu;
+    protected String programName; // The program name
+    protected Menu parentMenu;
+    protected String menuName; // The menu name
+    protected List<String> menuItems; // A list of menu selection items
+    protected boolean isMainMenu;
+    protected int numSelections;
 
     // Sets all menu classes highestMenuItem + 1 to accoutn for starting menu items at 1
     // Sets all submenu classes highestMenuItem to and additional (+2) to account for the additional selection
@@ -23,17 +22,26 @@ public class Menu {
         this.programName = programName.toUpperCase();
         this.menuName = menuName;
         this.menuItems = new ArrayList<>(Arrays.asList(menuItems));
-        this.lowestMenuItemNum = 1;
         this.isMainMenu = true;
-        this.highestMenuItemNum = this.menuItems.size() + 1; // Main menu has one extra item for exit/return
+        // Add "Exit Program" as the last item for main menu
+        this.menuItems.add("Exit Program");
+        this.numSelections = this.menuItems.size();
     }
 
     // Constructor for SubMenu objects
     public Menu(Menu parentMenu, String menuName, String... menuItems) {
-        // Reusing the main menu constructor
         this(parentMenu.getProgramName(), menuName, menuItems);
+        this.parentMenu = parentMenu;
         this.isMainMenu = false;
-        this.highestMenuItemNum = this.menuItems.size() + 2; // Submenu has two extra items: one for return to parent, and one for exit/return
+        // Add "Return to Parent Menu" before "Exit Program"
+        int exitIndex = this.menuItems.indexOf("Exit Program");
+        if (exitIndex != -1) {
+            this.menuItems.add(exitIndex, "Return to " + parentMenu.getMenuName());
+        } else {
+            this.menuItems.add("Return to " + parentMenu.getMenuName());
+            this.menuItems.add("Exit Program");
+        }
+        this.numSelections = this.menuItems.size();
     }
 
 
@@ -46,18 +54,17 @@ public class Menu {
         return menuName;
     }
 
-    public int getLowestMenuItemNum() {
-        return lowestMenuItemNum;
-    }
-
-    public int getHighestMenuItemNum() {
-        return highestMenuItemNum;
+    public Menu getParentMenu() {
+        return parentMenu;
     }
 
     public List<String> getMenuItems() {
         return menuItems;
     }
 
+    public int getNumSelections() {
+        return numSelections;
+    }
 
     // Prints menu name centered to the console width with dashes on each side of menu name
     public void printMenuName() {
@@ -76,60 +83,49 @@ public class Menu {
 
 
     public int makeASelection() {
-
-        // Scanner instantiation put in a try block as if it fails, it will close it out for memory management
-        try (Scanner scanner = new Scanner(System.in)) {
-            while (true) {
-                displayMenuOptions();
-
-                System.out.println("Please make a selection (or enter 'q' to quit):");
+        Scanner scanner = new Scanner(System.in); // Do not close this scanner
+        while (true) {
+            displayMenuOptions();
+            System.out.println("\nPlease make a selection:");
+            try {
                 String inputLine = scanner.nextLine();
-
-                if (inputLine.equalsIgnoreCase("q")) {
-                    exitProgram();
-                    return -1; // Or a specific code to indicate exit
+                int userSelection = Integer.parseInt(inputLine);
+                if (isValidSelection(userSelection)) {
+                    return userSelection;
+                } else {
+                    System.out.println("Invalid selection, please try again.");
                 }
-
-                // Try block attempts to convert user input to int and validates its within range of item numbers
-                try {
-                    int userSelection = Integer.parseInt(inputLine);
-                    if (isValidSelection(userSelection)) {
-                        return userSelection;
-                    } else {
-                        System.out.println("Invalid selection, please try again.");
-                    }
-                    // If the number can't be converted to an int, exception is caught
-                } catch (NumberFormatException e) {
-                    System.out.println("Please enter a valid integer or 'q' to exit.");
-                }
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid integer.");
+            } catch (NoSuchElementException e) {
+                exitProgram();
+                // Instead of returning -1, consider how you want to handle this case.
+                // For now, we can just continue to prompt the user again.
+                // return -1;
             }
-            // NoSuchElement can be thrown for various reasons, to include ctrl +d
-        } catch (NoSuchElementException e) {
-            System.out.println("Input error. Exiting...");
-            exitProgram();
-            return -1; // return -1 as program errored out
         }
+        // Do not include a scanner.close() statement here or anywhere with System.in
     }
 
-    private void displayMenuOptions() {
-        for (int i = 0; i < getHighestMenuItemNum(); i++) {
-            System.out.println((i + 1) + ") " + menuItems.get(i));
-        }
-        if (!isMainMenu) {
-            System.out.println(getHighestMenuItemNum() + ") Return to " + parentMenu.getMenuName());
-        }
-        System.out.println(getHighestMenuItemNum() + 1 + ") Exit " + getMenuName());
-    }
-
-
-    protected void exitProgram() {
-        ExitMenu theExitMenu = new ExitMenu( this, "Exit Menu");
+    public void exitProgram() {
+        System.out.println("Redirecting to Exit Menu...");
+        ExitMenu theExitMenu = new ExitMenu(this, "Exit Menu");
         theExitMenu.start();
     }
 
+
+    private void displayMenuOptions() {
+        for (int i = 0; i < getNumSelections(); i++) {
+            System.out.println(i + 1 + ") " + menuItems.get(i));
+
+        }
+
+    }
+
+
     // Determines if the users selection is within the bounds of the menuItems selections
     protected boolean isValidSelection(int userSelection) {
-        return userSelection >= getLowestMenuItemNum()  && userSelection <= getHighestMenuItemNum();
+        return userSelection >= 1  && userSelection <= getNumSelections();
     }
 
     // Centers text within a specified width by adding padding with dashes '-' on both sides.
@@ -220,8 +216,6 @@ public class Menu {
         // Returns the obtained or default console width.
         return defaultWidth;
     }
-
-
 
 
 }

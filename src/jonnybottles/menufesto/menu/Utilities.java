@@ -20,7 +20,7 @@ public class Utilities {
             Process startProcess = pb.inheritIO().start();
             startProcess.waitFor();
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            System.out.println("Error clearing screen...");
         }
     }
 }
