@@ -2,32 +2,55 @@ package jonnybottles.menufesto.menu;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Menu {
 
     private String programName; // The program name
     private String menuName; // The menu name
-    private Menu parentMenu; // The parent menu of the current menu
-    private Boolean isMainMenu; // Used to determine if this the main menu
     private List<String> menuItems; // A list of menu selection items
+    private int lowestMenuItemNum;
+    private int highestMenuItemNum;
+    private boolean isSubMenu;
 
-    // Constructor for all sub / non-main menu objects
-    public Menu(String menuName, Menu parentMenu,  Boolean isMainMenu, String... menuItems) {
-        this.menuName = menuName;
-        this.parentMenu = parentMenu;
-        this.isMainMenu = isMainMenu;
-        this.menuItems = new ArrayList<>(Arrays.asList(menuItems));
-    }
 
     // Constructor for MainMenu objects, as they will have no parent menu.
     public Menu(String menuName, String programName, String... menuItems) {
-        this(menuName, null, true, menuItems);
+        this.menuName = menuName;
         this.programName = programName.toUpperCase();
+        this.menuItems = new ArrayList<>(Arrays.asList(menuItems));
+        this.lowestMenuItemNum = 1;
+        this.isSubMenu = false;
+        // Sets all menu classes highestMenuItem + 1 to accoutn for starting menu items at 1
+        // Sets all submenu classes highestMenuItem to and additional (+2) to account for the additional selection
+        // to return to the parent menu
+        this.highestMenuItemNum = (isSubMenu) ? this.menuItems.size()  + 2: this.menuItems.size() +1;
 
+    }
+
+    public String getProgramName() {
+        return programName;
+    }
+
+    public String getMenuName() {
+        return menuName;
+    }
+
+    public int getLowestMenuItemNum() {
+        return lowestMenuItemNum;
+    }
+
+    public int getHighestMenuItemNum() {
+        return highestMenuItemNum;
+    }
+
+    public List<String> getMenuItems() {
+        return menuItems;
+    }
+
+    // Add a setter method for isSubMenu to allow subclasses to set it.
+    protected void setSubMenu(boolean isSubMenu) {
+        this.isSubMenu = isSubMenu;
     }
 
     // Prints menu name centered to the console width with dashes on each side of menu name
@@ -37,9 +60,7 @@ public class Menu {
         int consoleWidth = getConsoleWidth(); // Obtains the console width
         String formattedMenuName = centerText(menuName, consoleWidth); // Centers the menu name with dashes
 
-        if (isMainMenu) {
-            System.out.println(centerText( programName, consoleWidth)); // Prints the program name for main menu
-        }
+        System.out.println(centerText(programName, consoleWidth)); // Prints the program name for main menu
 
         System.out.print(formattedMenuName); // Prints the centered menu name with dashes
     }
@@ -48,32 +69,42 @@ public class Menu {
     public int makeASelection() {
         Scanner scanner = new Scanner(System.in);
 
-        while (true ) {
+        while (true) {
             try {
-                for (int i = 0; i < menuItems.size(); i++) {
-                    System.out.println(i + ")" + menuItems.get(i));
+                for (int i = 0; i < getHighestMenuItemNum(); i++) {
+                    System.out.println((i + 1) + ") " + menuItems.get(i));
                 }
 
-                // If this is a sub menu, provide aan option to return to the main menu
-                if (!isMainMenu) {
-                    System.out.println(menuItems.size() + 1 + ")" + "Return to " + this.parentMenu.menuName);
+                System.out.println("Please make a selection:");
+                String inputLine = scanner.nextLine();
+
+                int userSelection = Integer.parseInt(inputLine);
+                if (isValidSelection(userSelection)) {
+                    return userSelection;
+                } else {
+                    System.out.println("Invalid selection, please try again.");
                 }
 
-                System.out.println("Please make a selection");
-                int userSelection = scanner.nextInt();
-                int validSelection = isValidSelection(int userSelection);
-
-            } catch ()
+            } catch (NoSuchElementException e) {
+                exitProgram();
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter an integer value.");
+            }
         }
-
     }
 
-    private boolean isValidSelection(int userSelection) {
-        return
+    protected void exitProgram() {
+        ExitMenu theExitMenu = new ExitMenu("Exit Menu", this);
+        theExitMenu.start();
+    }
+
+    // Determines if the users selection is within the bounds of the menuItems selections
+    protected boolean isValidSelection(int userSelection) {
+        return userSelection >= getLowestMenuItemNum()  && userSelection <= getHighestMenuItemNum();
     }
 
     // Centers text within a specified width by adding padding with dashes '-' on both sides.
-    private String centerText(String text, int width) {
+    protected String centerText(String text, int width) {
         // Defines the padding character as a dash '-'
         String dash = "-";
         // Add a space on each side of the text to ensure spacing between text and padding
@@ -101,7 +132,7 @@ public class Menu {
 
 
     // Obtains the console width
-    public static int getConsoleWidth() {
+    protected static int getConsoleWidth() {
         // Determines the current operating system by querying the system property "os.name" and converting it to
         // lowercase.
         String operatingSystem = System.getProperty("os.name").toLowerCase();
@@ -123,7 +154,7 @@ public class Menu {
 
 
     // Executes a system command to obtain the console width.
-    private static int executeCommandToGetConsoleWidth(String command) {
+    protected static int executeCommandToGetConsoleWidth(String command) {
         // Default console width (80 columns)
         int width = 80;
         try {
@@ -151,6 +182,8 @@ public class Menu {
         // Returns the obtained or default console width.
         return width;
     }
+
+
 
 }
 
