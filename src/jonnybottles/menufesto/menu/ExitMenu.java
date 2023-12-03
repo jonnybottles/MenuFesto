@@ -2,10 +2,10 @@ package jonnybottles.menufesto.menu;
 
 import java.util.NoSuchElementException;
 
-public class ExitMenu extends SubMenu {
+public class ExitMenu extends Menu {
 
-    public ExitMenu(String menuName, Menu parentMenu) {
-        super(menuName, parentMenu, "Exit Program");
+    public ExitMenu(Menu parentMenu, String menuName) {
+        super(parentMenu, menuName, "Exit Program");
     }
 
     public void quitOrResume() {

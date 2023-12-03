@@ -7,26 +7,36 @@ import java.util.*;
 public class Menu {
 
     private String programName; // The program name
+    private Menu parentMenu;
     private String menuName; // The menu name
     private List<String> menuItems; // A list of menu selection items
     private int lowestMenuItemNum;
     private int highestMenuItemNum;
-    private boolean isSubMenu;
+    private boolean isMainMenu;
 
+    // Sets all menu classes highestMenuItem + 1 to accoutn for starting menu items at 1
+    // Sets all submenu classes highestMenuItem to and additional (+2) to account for the additional selection
+    // to return to the parent menu
 
-    // Constructor for MainMenu objects, as they will have no parent menu.
-    public Menu(String menuName, String programName, String... menuItems) {
-        this.menuName = menuName;
+    // Constructor for MainMenu objects
+    public Menu(String programName, String menuName, String... menuItems) {
         this.programName = programName.toUpperCase();
+        this.menuName = menuName;
         this.menuItems = new ArrayList<>(Arrays.asList(menuItems));
         this.lowestMenuItemNum = 1;
-        this.isSubMenu = false;
-        // Sets all menu classes highestMenuItem + 1 to accoutn for starting menu items at 1
-        // Sets all submenu classes highestMenuItem to and additional (+2) to account for the additional selection
-        // to return to the parent menu
-        this.highestMenuItemNum = (isSubMenu) ? this.menuItems.size()  + 2: this.menuItems.size() +1;
-
+        this.isMainMenu = true;
+        this.highestMenuItemNum = this.menuItems.size() + 1; // Main menu has one extra item for exit/return
     }
+
+    // Constructor for SubMenu objects
+    public Menu(Menu parentMenu, String menuName, String... menuItems) {
+        // Reusing the main menu constructor
+        this(parentMenu.getProgramName(), menuName, menuItems);
+        this.isMainMenu = false;
+        this.highestMenuItemNum = this.menuItems.size() + 2; // Submenu has two extra items: one for return to parent, and one for exit/return
+    }
+
+
 
     public String getProgramName() {
         return programName;
@@ -48,10 +58,6 @@ public class Menu {
         return menuItems;
     }
 
-    // Add a setter method for isSubMenu to allow subclasses to set it.
-    protected void setSubMenu(boolean isSubMenu) {
-        this.isSubMenu = isSubMenu;
-    }
 
     // Prints menu name centered to the console width with dashes on each side of menu name
     public void printMenuName() {
@@ -60,41 +66,64 @@ public class Menu {
         int consoleWidth = getConsoleWidth(); // Obtains the console width
         String formattedMenuName = centerText(menuName, consoleWidth); // Centers the menu name with dashes
 
-        System.out.println(centerText(programName, consoleWidth)); // Prints the program name for main menu
+        if (isMainMenu) {
+            System.out.println(centerText(programName, consoleWidth)); // Prints the program name for main menu
+
+        }
 
         System.out.print(formattedMenuName); // Prints the centered menu name with dashes
     }
 
 
     public int makeASelection() {
-        Scanner scanner = new Scanner(System.in);
 
-        while (true) {
-            try {
-                for (int i = 0; i < getHighestMenuItemNum(); i++) {
-                    System.out.println((i + 1) + ") " + menuItems.get(i));
-                }
+        // Scanner instantiation put in a try block as if it fails, it will close it out for memory management
+        try (Scanner scanner = new Scanner(System.in)) {
+            while (true) {
+                displayMenuOptions();
 
-                System.out.println("Please make a selection:");
+                System.out.println("Please make a selection (or enter 'q' to quit):");
                 String inputLine = scanner.nextLine();
 
-                int userSelection = Integer.parseInt(inputLine);
-                if (isValidSelection(userSelection)) {
-                    return userSelection;
-                } else {
-                    System.out.println("Invalid selection, please try again.");
+                if (inputLine.equalsIgnoreCase("q")) {
+                    exitProgram();
+                    return -1; // Or a specific code to indicate exit
                 }
 
-            } catch (NoSuchElementException e) {
-                exitProgram();
-            } catch (NumberFormatException e) {
-                System.out.println("Please enter an integer value.");
+                // Try block attempts to convert user input to int and validates its within range of item numbers
+                try {
+                    int userSelection = Integer.parseInt(inputLine);
+                    if (isValidSelection(userSelection)) {
+                        return userSelection;
+                    } else {
+                        System.out.println("Invalid selection, please try again.");
+                    }
+                    // If the number can't be converted to an int, exception is caught
+                } catch (NumberFormatException e) {
+                    System.out.println("Please enter a valid integer or 'q' to exit.");
+                }
             }
+            // NoSuchElement can be thrown for various reasons, to include ctrl +d
+        } catch (NoSuchElementException e) {
+            System.out.println("Input error. Exiting...");
+            exitProgram();
+            return -1; // return -1 as program errored out
         }
     }
 
+    private void displayMenuOptions() {
+        for (int i = 0; i < getHighestMenuItemNum(); i++) {
+            System.out.println((i + 1) + ") " + menuItems.get(i));
+        }
+        if (!isMainMenu) {
+            System.out.println(getHighestMenuItemNum() + ") Return to " + parentMenu.getMenuName());
+        }
+        System.out.println(getHighestMenuItemNum() + 1 + ") Exit " + getMenuName());
+    }
+
+
     protected void exitProgram() {
-        ExitMenu theExitMenu = new ExitMenu("Exit Menu", this);
+        ExitMenu theExitMenu = new ExitMenu( this, "Exit Menu");
         theExitMenu.start();
     }
 
@@ -105,29 +134,37 @@ public class Menu {
 
     // Centers text within a specified width by adding padding with dashes '-' on both sides.
     protected String centerText(String text, int width) {
-        // Defines the padding character as a dash '-'
-        String dash = "-";
-        // Add a space on each side of the text to ensure spacing between text and padding
+        // Add space around the text for better readability
         text = " " + text + " ";
 
-        // Calculates the length of the modified text
-        int textLength = text.length();
-        // Calculates the padding required to center the text
-        int padding = (width - textLength) / 2;
+        // Calculates the lengths for left and right padding
+        int[] paddingLengths = calculatePaddingLengths(text.length(), width);
 
-        // Ensures that padding is non-negative (in case text is longer than the console width)
-        if (padding < 0) {
-            padding = 0;
-        }
-
-        // Creates the left-padding with dashes
-        String leftPadding = dash.repeat(padding);
-
-        // Calculates the right-padding, taking into account the length of the text and left-padding
-        String rightPadding = dash.repeat(width - textLength - leftPadding.length());
+        // Creates the left and right padding strings
+        String leftPadding = createPaddingString('-', paddingLengths[0]);
+        String rightPadding = createPaddingString('-', paddingLengths[1]);
 
         // Concatenates the left-padding, text, and right-padding to center the text within the specified width
         return leftPadding + text + rightPadding;
+    }
+
+    // Calculates the left and right padding lengths required to center the text
+    private int[] calculatePaddingLengths(int textLength, int totalWidth) {
+        // Calculates the total padding required
+        int padding = (totalWidth - textLength) / 2;
+        padding = Math.max(padding, 0); // Ensure padding is not negative
+
+        // Calculates the right padding, taking into account the left padding and text length
+        int rightPadding = totalWidth - textLength - padding;
+
+        // Returns an array containing the left and right padding lengths
+        return new int[]{padding, rightPadding};
+    }
+
+    // Creates a string of a specified length using a given padding character
+    private String createPaddingString(char paddingChar, int length) {
+        // Creates a string filled with the padding character of the specified length
+        return new String(new char[length]).replace('\0', paddingChar);
     }
 
 
@@ -156,7 +193,7 @@ public class Menu {
     // Executes a system command to obtain the console width.
     protected static int executeCommandToGetConsoleWidth(String command) {
         // Default console width (80 columns)
-        int width = 80;
+        int defaultWidth = 80;
         try {
             // Executes the specified command as a system process.
             Process p = Runtime.getRuntime().exec(command);
@@ -168,20 +205,22 @@ public class Menu {
             while ((line = reader.readLine()) != null) {
                 // If the command is "mode con" (Windows), and the output line contains "Columns," extract the width.
                 if (command.contains("mode con") && line.contains("Columns")) {
-                    width = Integer.parseInt(line.replaceAll("\\D", ""));
+                    defaultWidth = Integer.parseInt(line.replaceAll("\\D", ""));
                 }
                 // If it's not a "mode con" command (Unix-based), parse the line as an integer to get the width.
                 else if (!command.contains("mode con")) {
-                    width = Integer.parseInt(line.trim());
+                    defaultWidth = Integer.parseInt(line.trim());
                 }
             }
         } catch (Exception e) {
             // Handles any exceptions that may occur during command execution.
-            e.printStackTrace();
+            // Instead of printing the stack trace, it prints a user-friendly message and uses a default width.
+            System.out.println("Error obtaining console width. Using default width: " + defaultWidth);
         }
         // Returns the obtained or default console width.
-        return width;
+        return defaultWidth;
     }
+
 
 
 
