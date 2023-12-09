@@ -1,39 +1,38 @@
 package jonnybottles.menufesto.menu;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class Menu {
 
-    protected String programName; // The program name
-    protected Menu parentMenu;
-    protected String menuName; // The menu name
-    protected List<String> menuItems; // A list of menu selection items
-    protected boolean isMainMenu;
-    protected int numSelections;
+    private String programName; // The program name.
+    private Menu parentMenu; // The parent menu object.
+    private String menuName; // The menu name
+    private List<String> menuItems; // A list of menu items to select from.
+    private boolean isMainMenu; // Used to check if the menu is a main or submenu
+    private int numSelections; // Size of the menuItems list.
+    private static boolean isAnyMenuRunning;
 
-    // Sets all menu classes highestMenuItem + 1 to accoutn for starting menu items at 1
-    // Sets all submenu classes highestMenuItem to and additional (+2) to account for the additional selection
-    // to return to the parent menu
 
     // Constructor for MainMenu objects
     public Menu(String programName, String menuName, String... menuItems) {
         this.programName = programName.toUpperCase();
-        this.menuName = menuName;
+        this.menuName = Utilities.capitalize(menuName);
         this.menuItems = new ArrayList<>(Arrays.asList(menuItems));
         this.isMainMenu = true;
         // Add "Exit Program" as the last item for main menu
         this.menuItems.add("Exit Program");
-        this.numSelections = this.menuItems.size();
+        this.numSelections = this.menuItems.size(); // Set num selections to num items in the MenuItems list
     }
 
     // Constructor for SubMenu objects
     public Menu(Menu parentMenu, String menuName, String... menuItems) {
-        this(parentMenu.getProgramName(), menuName, menuItems);
+        this(parentMenu.programName, menuName, menuItems);
         this.parentMenu = parentMenu;
         this.isMainMenu = false;
-        // Add "Return to Parent Menu" before "Exit Program"
+
+        // Identify exit program index and add "Return to [parent menu]" menu item.
         int exitIndex = this.menuItems.indexOf("Exit Program");
         if (exitIndex != -1) {
             this.menuItems.add(exitIndex, "Return to " + parentMenu.getMenuName());
@@ -45,17 +44,16 @@ public class Menu {
     }
 
 
-
     public String getProgramName() {
         return programName;
     }
 
-    public String getMenuName() {
-        return menuName;
-    }
-
     public Menu getParentMenu() {
         return parentMenu;
+    }
+
+    public String getMenuName() {
+        return menuName;
     }
 
     public List<String> getMenuItems() {
@@ -66,65 +64,187 @@ public class Menu {
         return numSelections;
     }
 
+
+    // TODO modify code to use printPrompt and inputPrompt from here
+    // https://chat.openai.com/c/00075186-1067-462e-b520-9c4a3b58c148
+
     // Prints menu name centered to the console width with dashes on each side of menu name
     public void printMenuName() {
         Utilities.clearScreen();
 
-        int consoleWidth = getConsoleWidth(); // Obtains the console width
-        String formattedMenuName = centerText(menuName, consoleWidth); // Centers the menu name with dashes
+        // Obtains the console width
+        int consoleWidth = getConsoleWidth();
 
+        // Centers the menu name with dashes
+        String formattedMenuName = centerText(menuName, consoleWidth);
+
+        // If this menu is the main menu, prints the program name.
         if (isMainMenu) {
-            System.out.println(centerText(programName, consoleWidth)); // Prints the program name for main menu
+            System.out.println(centerText(programName, consoleWidth));
 
         }
-
-        System.out.println(formattedMenuName + "\n"); // Prints the centered menu name with dashes
+        // Prints the centered menu name with dashes
+        System.out.println(formattedMenuName + "\n");
     }
 
 
+    // Prints a list of menu options for the user to select from, obtains input and instantiates // calls
+    // selected menu.
     public int makeASelection() {
-        Scanner scanner = new Scanner(System.in); // Do not close this scanner
+        Scanner scanner = new Scanner(System.in);
+
+        printMenuName();
         while (true) {
+
+            displayCustomContent();
             displayMenuOptions();
-            System.out.println("\nPlease make a selection:");
+
             try {
-                String inputLine = scanner.nextLine();
-                int userSelection = Integer.parseInt(inputLine);
+                int userSelection = Integer.parseInt(scanner.nextLine());
                 if (isValidSelection(userSelection)) {
                     return userSelection;
                 } else {
                     Utilities.clearScreen();
-                    System.out.println("Invalid selection, please try again.");
+                    printMenuName();
+                    System.out.println("Invalid selection, please enter a valid option.\n ");
                 }
             } catch (NumberFormatException e) {
                 Utilities.clearScreen();
-                System.out.println("Please enter a valid integer.");
+                printMenuName();
+                System.out.println("Please enter a valid selection.\n");
             } catch (NoSuchElementException e) {
                 exitProgram();
             }
+
+
         }
-        // Do not include a scanner.close() statement here or anywhere with System.in
+
     }
 
-    public void exitProgram() {
-        System.out.println("Redirecting to Exit Menu...");
-        ExitMenu theExitMenu = new ExitMenu(this, "Exit Menu");
-        theExitMenu.start();
+    // Method that can be overridden by subclasses when there is a need to display custom content
+    // in makeASelection after clearing the screen, but before displaying menu optons
+    protected void displayCustomContent() {
+        // Empty by default
     }
 
-
+    // Iterates through menuItems and prints off corresponding number selection and item name
     private void displayMenuOptions() {
         for (int i = 0; i < getNumSelections(); i++) {
             System.out.println(i + 1 + ") " + menuItems.get(i));
 
         }
+        System.out.println("\nPlease make a selection:");
 
     }
-
 
     // Determines if the users selection is within the bounds of the menuItems selections
     protected boolean isValidSelection(int userSelection) {
         return userSelection >= 1  && userSelection <= getNumSelections();
+    }
+
+
+    //Instantiates an exitMenu object
+    public void exitProgram() {
+        ExitMenu theExitMenu = new ExitMenu(this, "Exit Menu");
+        theExitMenu.start();
+    }
+
+    public String getString(String msg) {
+        Scanner scanner = new Scanner(System.in);
+
+        printMenuName();
+        while (true) {
+            System.out.println(msg);
+            try {
+
+                String userString = scanner.nextLine();
+                if (isValidString(userString)) {
+                    return userString;
+                } else {
+                    System.out.println("Please enter a valid response.");
+                    try {
+                        // Sleep for 1 second
+                        TimeUnit.SECONDS.sleep(1);
+                    } catch (InterruptedException e) {
+                        exitProgram();
+
+                    }
+                    Utilities.clearScreen();
+                    printMenuName();
+                }
+
+            } catch (NoSuchElementException e) {
+                exitProgram();
+            }
+
+        }
+
+    }
+
+    // Obtains multiple strings from a user and returns a list of strings
+    public List<String> getStrings(String msg) {
+        Scanner scanner = new Scanner(System.in);
+        List<String> userStrings = new ArrayList<>();
+
+        while (true) {
+            try {
+                System.out.println(msg);
+                String response = scanner.nextLine();
+
+                if (response.isEmpty()) {
+                    break;
+                }
+
+                userStrings.add(response);
+            } catch (NoSuchElementException e) {
+                exitProgram();
+            }
+        }
+
+        return userStrings;
+    }
+
+
+    public int getInt(String msg) {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            try {
+                System.out.println(msg);
+                return Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter an integer");
+            } catch (NoSuchElementException e) {
+                exitProgram();
+            }
+        }
+    }
+
+
+    public void start() {
+    }
+
+    private static boolean isValidString(String userString) {
+        // Trim the string to remove leading and trailing whitespaces to include \n\t\r etc.
+        String trimmedString = userString.trim();
+
+        // Check if the trimmed string is empty
+        return !trimmedString.isEmpty();
+    }
+
+
+    // TODO figure out how to have handleCtrlD work in both sub and parent menus
+    // TODO when Ctrl + D is detected while receiving input (e.g. in make a selection / getString)
+    // TODO it currently identifies a parent / sub menu correctly. When pressing ctrld
+    // TODO from a MainMenu it will exit appropriately. When doing so from a submenu
+    // TODO it returns the previous menu and gets caught in an infinite loop
+    public void handleCtrlD() {
+        if (isMainMenu) {
+            System.out.println("Exiting " + getProgramName());
+            System.exit(0);
+        }
+        getParentMenu().start();
+
+
     }
 
     // Centers text within a specified width by adding padding with dashes '-' on both sides.
@@ -215,6 +335,8 @@ public class Menu {
         // Returns the obtained or default console width.
         return defaultWidth;
     }
+
+
 
 
 }

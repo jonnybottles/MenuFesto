@@ -1,5 +1,6 @@
 package jonnybottles.menufesto.menu;
 
+import java.util.NoSuchElementException;
 public class ExitMenu extends Menu {
 
     public ExitMenu(Menu parentMenu, String menuName) {
@@ -24,6 +25,7 @@ public class ExitMenu extends Menu {
         System.exit(0);
     }
 
+    @Override
     public void start() {
         quitOrResume();
     }
