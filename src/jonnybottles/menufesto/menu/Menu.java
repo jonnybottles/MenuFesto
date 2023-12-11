@@ -1,5 +1,4 @@
 package jonnybottles.menufesto.menu;
-\
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

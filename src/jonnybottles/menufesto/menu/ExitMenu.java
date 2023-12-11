@@ -1,11 +1,12 @@
 package jonnybottles.menufesto.menu;
 
-public class ExitMenu extends dev.lpa.Menu {
+import java.util.NoSuchElementException;
+public class ExitMenu extends Menu {
 
     private static final String RETURN_TO_PREVIOUS_MENU = "R";
     private static final String QUIT_PROGRAM = "Q";
 
-    public ExitMenu(dev.lpa.Menu parentMenu, String menuName) {
+    public ExitMenu(Menu parentMenu, String menuName) {
         super(parentMenu, menuName);
     }
 
