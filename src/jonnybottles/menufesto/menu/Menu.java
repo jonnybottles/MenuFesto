@@ -1,9 +1,11 @@
 package jonnybottles.menufesto.menu;
+\
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
 
 public class Menu {
 
@@ -50,20 +52,34 @@ public class Menu {
         return menuName;
     }
 
+    public void setParentMenu(Menu parentMenu) {
+        this.parentMenu = parentMenu;
+    }
 
-    //Parses options from constructor arguments
     private void parseOptions(String[] options) {
-        for (String option: options) {
-            String [] parts = option.split(",", 2);
-            if (isValidMenuOption(parts)) {
-                this.menuOptions.put(parts[0].trim().toUpperCase(), Utilities.capitalize(parts[1].trim()));
-            } else {
-                System.out.println("Invalid menu option format" + option);
-            }
+        for (String option : options) {
+            try {
+                String[] parts = option.split(",", 2);
+                if (parts.length != 2) {
+                    handleInvalidOption("Menu options must be specified as [Option Selection], [Option Name]");
+                    return;
+                }
 
+                String optionSelection = parts[0].trim().toUpperCase();
+                String optionName = Utilities.capitalize(parts[1].trim());
+
+                if (!isValidMenuOption(optionSelection)) {
+                    handleInvalidOption("Invalid menu option format " + optionSelection + ".");
+                    return;
+                }
+
+                this.menuOptions.put(optionSelection, optionName);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                handleInvalidOption("Invalid menu option format: " + option);
+                return;
+            }
         }
 
-        // For submenus, remove "Exit Program" if it was added, to re-add it later as the last option
         if (!isMainMenu) {
             this.menuOptions.remove("Q");
             // Add "Return to [parent menu]" option as the second to last option
@@ -72,16 +88,17 @@ public class Menu {
             // Add "Exit Program" as the last option for all menus
             this.menuOptions.put("Q", "Exit Program");
         }
-
-
-
     }
 
-    //Validates menu options format
-    private boolean isValidMenuOption(String[] parts) {
-        return parts.length == 2;
+
+    private boolean isValidMenuOption(String optionSelection) {
+        return !(optionSelection.equals("Q") || optionSelection.equals("R"));
     }
 
+    private void handleInvalidOption(String errorMessage) {
+        System.out.println(errorMessage);
+        System.exit(0);
+    }
 
     // TODO modify code to use printPrompt and inputPrompt from here
     // https://chat.openai.com/c/00075186-1067-462e-b520-9c4a3b58c148
@@ -156,7 +173,7 @@ public class Menu {
 
 
     // Method to handle the user's selection
-    private void handleSelection(String selection) {
+    protected void handleSelection(String selection) {
         // Implement actions based on the selection here
         // For example, if the selection is "Q", you may want to quit the program
         if ("Q".equals(selection) && isMainMenu) {
@@ -366,3 +383,7 @@ public class Menu {
 
 
 }
+
+
+
+
