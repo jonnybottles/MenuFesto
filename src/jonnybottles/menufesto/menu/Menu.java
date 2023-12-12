@@ -17,13 +17,16 @@ public class Menu {
     // Constructor for MainMenu objects
     public Menu(String programName, String menuName, String... options) {
         this.programName = programName.toUpperCase();
-        this.menuName = Utilities.capitalize(menuName);
+        this.menuName = Utilities.capitalize(menuName); // Capitalizes first letter of each word in menu name.
         this.menuOptions = new LinkedHashMap<>();
         this.isMainMenu = true;
 
+        // Parses all user passed String[] options and adds them to menuOptions HashMap
         parseOptions(options);
 
-        this.menuOptions.put("Q", "Exit Program");
+        // Adds "Exit Menu" as last option for main menus.
+        addExtraMenuOptions();
+
 
     }
 
@@ -33,11 +36,11 @@ public class Menu {
         this.parentMenu = parentMenu;
         this.isMainMenu = false;
 
-        parseOptions(options);
+        // Adds "Return to [parent menu]" as second to last option for submenus.
+        // Adds "Exit Menu" as last option for submenus.
+        addExtraMenuOptions();
 
     }
-
-
 
     public String getProgramName() {
         return programName;
@@ -51,52 +54,76 @@ public class Menu {
         return menuName;
     }
 
-    public void setParentMenu(Menu parentMenu) {
-        this.parentMenu = parentMenu;
-    }
 
+    // Parses all user passed String[] options and adds them to menuOptions HashMap
     private void parseOptions(String[] options) {
         for (String option : options) {
             try {
+                // Splits menu options buy comma, separating them by optionSelection and optionName
                 String[] parts = option.split(",", 2);
                 if (parts.length != 2) {
-                    handleInvalidOption("Menu options must be specified as [Option Selection], [Option Name]");
+                    handleInvalidOption(option,
+                            "Menu options must be specified as [Option Selection], [Option Name]",
+                            "Usage: Menu(\"program name / parent program\", \"menu name\", \"option selection, option name\")");
                     return;
                 }
 
                 String optionSelection = parts[0].trim().toUpperCase();
                 String optionName = Utilities.capitalize(parts[1].trim());
 
+                // Checks to see if any menu option selections contain reserved seletion characters Q or R
                 if (!isValidMenuOption(optionSelection)) {
-                    handleInvalidOption("Invalid menu option format " + optionSelection + ".");
+                    handleInvalidOption(option,"Q & R characters are reserved menu option characters.");
                     return;
                 }
 
+                // If the menu option selection and option name are valid, adds to menuOptions HashMap.
                 this.menuOptions.put(optionSelection, optionName);
+
+
             } catch (ArrayIndexOutOfBoundsException e) {
-                handleInvalidOption("Invalid menu option format: " + option);
+                handleInvalidOption(option,
+                        "Menu options must be specified as [Option Selection], [Option Name]",
+                        "Usage: Menu(\"program name / parent program\", \"menu name\", \"option selection, option name\")");
                 return;
             }
         }
 
-        if (!isMainMenu) {
-            this.menuOptions.remove("Q");
-            // Add "Return to [parent menu]" option as the second to last option
-            this.menuOptions.put("R", "Return to " + parentMenu.getMenuName());
-
-            // Add "Exit Program" as the last option for all menus
-            this.menuOptions.put("Q", "Exit Program");
-        }
     }
 
 
+    // Checks to make sure that none of the reserved menu option characters are passed as a menu option
     private boolean isValidMenuOption(String optionSelection) {
         return !(optionSelection.equals("Q") || optionSelection.equals("R"));
     }
 
-    private void handleInvalidOption(String errorMessage) {
-        System.out.println(errorMessage);
+    // Prints error message and exits program if invalid menu options are passed.
+    private void handleInvalidOption(String option, String... errorMessages) {
+        System.out.println("Invalid menu option format: \"" + option + "\".");
+        for (String msg : errorMessages) {
+            System.out.println(msg);
+        }
         System.exit(0);
+    }
+
+
+    // Adds "Exit Program" to the end of all menu options and adds "Return to [parent menu]
+    // as the second to last menu option for all submenus.
+    private void addExtraMenuOptions() {
+        if (!isMainMenu) {
+
+            // Removes Quit from submenu to allow for proper placement as it is placed as last element
+            // By calling parent constructor of a main menu
+            this.menuOptions.remove("Q");
+
+            // Add "Return to [parent menu]" option as the second to last option
+            this.menuOptions.put("R", "Return to " + parentMenu.getMenuName());
+
+
+        }
+
+        // Add "Exit Program" as the last option for all menus
+        this.menuOptions.put("Q", "Exit Program");
     }
 
     // TODO modify code to use printPrompt and inputPrompt from here
@@ -190,6 +217,7 @@ public class Menu {
         theExitMenu.start();
     }
 
+    // Obtains a single string from the user.
     public String getString(String msg) {
         Scanner scanner = new Scanner(System.in);
 
@@ -246,7 +274,7 @@ public class Menu {
         return userStrings;
     }
 
-
+    // Gets a single int from a user.
     public int getInt(String msg) {
         Scanner scanner = new Scanner(System.in);
         while (true) {
