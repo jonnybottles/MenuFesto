@@ -1,47 +1,56 @@
 package jonnybottles.menufesto.menu;
-
-import java.util.NoSuchElementException;
 public class ExitMenu extends Menu {
 
     private static final String RETURN_TO_PREVIOUS_MENU = "R";
     private static final String QUIT_PROGRAM = "Q";
 
+    // Constructor for ExitMenu
     public ExitMenu(Menu parentMenu, String menuName) {
-        super(parentMenu, menuName);
-    }
-
-    public void quitOrResume() {
-        while (true) {
-            String userSelection = makeASelection();
-
-            if (userSelection.equals(RETURN_TO_PREVIOUS_MENU)) {
-                getParentMenu().start();
-                break;
-            } else if (userSelection.equals(QUIT_PROGRAM)) {
-                actuallyExitProgram();
-                break;
-            }
+        super(parentMenu.getProgramName(), menuName);
+        // Add option to return to the parent menu with the parent menu's name
+        if (parentMenu != null) {
+            this.parentMenu = parentMenu;
+            menuOptions.put(RETURN_TO_PREVIOUS_MENU, parentMenu);
         }
+
+        // Add option to exit the program
+        menuOptions.put(QUIT_PROGRAM, this); // Here 'this' refers to the ExitMenu itself
     }
 
+    // Method to actually exit the program
     private void actuallyExitProgram() {
         System.out.println("Exiting " + getProgramName() + "...");
         System.exit(0);
     }
 
+    // Override the start method to handle the exit menu logic
+    @Override
+    public void start() {
+        makeASelection("Please select an option");
+    }
+
+
+    @Override
+    protected void displayMenuOptions(String msg) {
+        // Display the option to return to the parent menu, if it exists
+        if (parentMenu != null) {
+            System.out.println("(" + RETURN_TO_PREVIOUS_MENU + ") Return to " + parentMenu.getMenuName());
+        }
+        // Display the option to exit the program
+        System.out.println("(" + QUIT_PROGRAM + ") Exit " + Utilities.capitalize(getProgramName()));
+
+        System.out.println("\n" + msg);
+    }
+
+    // Override handleSelection to handle specific actions for the ExitMenu
     @Override
     protected void handleSelection(String selection) {
-        if ("Q".equals(selection)) {
-            actuallyExitProgram();
+        if (QUIT_PROGRAM.equals(selection)) {
+            actuallyExitProgram(); // Call the method to exit the program if 'Q' is selected
         } else {
-            super.handleSelection(selection); // Handle other selections normally
+            super.handleSelection(selection); // Use the default handling for other selections
         }
     }
 
-
-    @Override
-    public void start() {
-        quitOrResume();
-    }
-
+    // No additional methods or logic are required for the ExitMenu class as of this implementation.
 }
