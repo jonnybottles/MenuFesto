@@ -1,6 +1,10 @@
 package jonnybottles.menufesto.menu;
 
+import java.util.NoSuchElementException;
 public class ExitMenu extends Menu {
+
+    private static final String RETURN_TO_PREVIOUS_MENU = "R";
+    private static final String QUIT_PROGRAM = "Q";
 
     public ExitMenu(Menu parentMenu, String menuName) {
         super(parentMenu, menuName);
@@ -8,11 +12,12 @@ public class ExitMenu extends Menu {
 
     public void quitOrResume() {
         while (true) {
-            int userSelection = makeASelection();
+            String userSelection = makeASelection();
 
-            if (userSelection == 1) {
+            if (userSelection.equals(RETURN_TO_PREVIOUS_MENU)) {
+                getParentMenu().start();
                 break;
-            } else if (userSelection == 2) {
+            } else if (userSelection.equals(QUIT_PROGRAM)) {
                 actuallyExitProgram();
                 break;
             }
@@ -24,6 +29,17 @@ public class ExitMenu extends Menu {
         System.exit(0);
     }
 
+    @Override
+    protected void handleSelection(String selection) {
+        if ("Q".equals(selection)) {
+            actuallyExitProgram();
+        } else {
+            super.handleSelection(selection); // Handle other selections normally
+        }
+    }
+
+
+    @Override
     public void start() {
         quitOrResume();
     }
