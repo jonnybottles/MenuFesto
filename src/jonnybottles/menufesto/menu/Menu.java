@@ -10,6 +10,7 @@ public class Menu {
     protected String programName; // The program name.
     protected Menu parentMenu; // The parent menu object.
     protected String menuName; // The menu name
+    protected String menuOptionDescription; // Description displayed next to menu option
     protected LinkedHashMap<String, Menu> menuOptions; // The menu options
     protected boolean isMainMenu; // Used to check if the menu is a main or submenu
     protected String optionSelection;
@@ -19,6 +20,7 @@ public class Menu {
     public Menu(String programName, String menuName, LinkedHashMap<String, Menu> menuOptions) {
         this.programName = programName.toUpperCase();
         this.menuName = Utilities.capitalize(menuName); // Capitalizes first letter of each word in menu name.
+        this.menuOptionDescription = this.menuName; // Initialize menuOptionDescription with menuName
         this.menuOptions = menuOptions;
         this.isMainMenu = true;
 
@@ -64,6 +66,14 @@ public class Menu {
         return menuName;
     }
 
+    // Method to set the menu option description
+    public void setMenuOptionDescription(String menuOptionDescription) {
+        this.menuOptionDescription = menuOptionDescription;
+    }
+
+    public String getMenuOptionDescription() {
+        return menuOptionDescription;
+    }
 
     // Checks to make sure that none of the reserved menu option characters are passed as a menu option
     private boolean isValidMenuOption(String optionSelection) {
@@ -175,21 +185,20 @@ public class Menu {
 
     protected void displayMenuOptions(String msg) {
         menuOptions.forEach((key, value) -> {
-            if (!key.equals("Q")) {  // Skip displaying the "Exit Menu" option
+            if (!key.equals("Q")) { // Skip displaying the "Exit Menu" option
                 if ("R".equals(key)) {
                     Menu parent = value.getParentMenu();  // Get the parent menu
-                    // Check if parent menu is not null before getting its name
-                    String parentMenuName = (parent != null) ? parent.getMenuName() : "Main Menu";
-                    System.out.println("(" + key + ") Return to " + parentMenuName);
+                    // Check if parent menu is not null before getting its description
+                    String parentMenuDescription = (parent != null) ? parent.getMenuOptionDescription() : "Main Menu";
+                    System.out.println("(" + key + ") Return to " + parentMenuDescription);
                 } else {
-                    System.out.println("(" + key + ") " + value.getMenuName());
+                    System.out.println("(" + key + ") " + value.getMenuOptionDescription());
                 }
             }
         });
 
         System.out.println("\n" + msg);  // Print the message passed to the method
     }
-
 
 
 
